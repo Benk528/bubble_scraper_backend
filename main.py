@@ -1,35 +1,33 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
-
-# Import the ScrapedData schema from schema.py
-from schema import ScrapedData
+from database import save_scrape, init_db, get_all_scrapes
 
 app = FastAPI()
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 class ScrapeRequest(BaseModel):
     url: str
 
-@app.post("/scrape", response_model=ScrapedData)
+@app.post("/scrape")
 async def scrape_data(scrape_request: ScrapeRequest):
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
-
-            # Open the target URL
             await page.goto(scrape_request.url)
 
             # Extract data
             page_title = await page.title()
-            metadata = await page.evaluate(
-                """() => {
-                    return {
-                        description: document.querySelector('meta[name="description"]')?.content || null,
-                        keywords: document.querySelector('meta[name="keywords"]')?.content || null,
-                        author: document.querySelector('meta[name="author"]')?.content || null
-                    };
-                }"""
+            meta_data = await page.evaluate(
+                """() => ({
+                    description: document.querySelector('meta[name="description"]')?.content || null,
+                    keywords: document.querySelector('meta[name="keywords"]')?.content || null,
+                    author: document.querySelector('meta[name="author"]')?.content || null
+                })"""
             )
             headings = await page.evaluate(
                 """() => Array.from(document.querySelectorAll('h1, h2, h3'), h => h.textContent.trim())"""
@@ -52,15 +50,26 @@ async def scrape_data(scrape_request: ScrapeRequest):
 
             await browser.close()
 
-            # Validate and return the structured JSON
-            data = ScrapedData(
-                page_title=page_title,
-                metadata=metadata,
-                headings=headings,
-                paragraphs=paragraphs,
-                links=links,
-                images=images,
-            )
-            return data
+            scraped_data = {
+                "page_title": page_title,
+                "meta_data": meta_data,
+                "headings": headings,
+                "paragraphs": paragraphs,
+                "links": links,
+                "images": images,
+            }
+
+            scrape_id = save_scrape(scraped_data)
+
+            return {
+                "message": "Scrape successful",
+                "scrape_id": scrape_id,
+                "data": scraped_data
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/scrapes")
+def get_scrapes():
+    scrapes = get_all_scrapes()
+    return {"scrapes": scrapes}

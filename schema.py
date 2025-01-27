@@ -9,14 +9,14 @@ class Image(BaseModel):
     src: str
     alt: Optional[str]
 
-class Metadata(BaseModel):
+class MetaData(BaseModel):
     description: Optional[str]
     keywords: Optional[str]
     author: Optional[str]
 
 class ScrapedData(BaseModel):
     page_title: str
-    metadata: Metadata
+    meta_data: MetaData
     headings: List[str]
     paragraphs: List[str]
     links: List[Link]
