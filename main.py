@@ -9,6 +9,11 @@ app = FastAPI()
 def startup_event():
     init_db()
 
+    # Define a root route
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Scraper API"}
+
 class ScrapeRequest(BaseModel):
     url: str
 
