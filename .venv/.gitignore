@@ -1,13 +1,24 @@
+# Environment Variables
 .env
+
+# Virtual Environment
 .venv/
 __pycache__/
+
+# Node Modules (if using JS tools in the project)
 node_modules/
-# Ignore Playwright binaries (they should be installed during deployment)
+
+# Playwright (should be installed during deployment)
 playwright/
 playwright/.cache/
-# Ignore Docker files
-Dockerfile
-docker-compose.yml
+
+# Docker (Keep Dockerfile if needed for Fly.io)
 .dockerignore
-# Ignore Vercel files
-vercel.json
+# Remove this if you're deploying with Docker:
+docker-compose.yml
+
+# OS/Editor Specific Files
+*.DS_Store
+.idea/
+*.log
+.vscode/
