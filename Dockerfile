@@ -1,34 +1,30 @@
-# Use a base image that supports Playwright & Python
-FROM mcr.microsoft.com/playwright/python:v1.38.0-jammy AS builder
+# Use Python 3.9 as the base image
+FROM python:3.9-slim
 
-# Set up environment variables
+# Set environment variables to avoid buffering and force re-installation of dependencies
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/app/.venv/bin:$PATH"
 
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y python3-venv
+# Install system dependencies needed for Playwright and FastAPI
+RUN apt-get update && apt-get install -y \
+    python3-venv \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set up virtual environment
-RUN python -m venv .venv
-COPY requirements.txt ./
-RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN python -m venv .venv \
+    && . .venv/bin/activate \
+    && pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && playwright install --with-deps
 
-# Install Playwright inside the virtual environment
-RUN .venv/bin/playwright install --with-deps
-
-# Use a slim image for deployment
-FROM python:3.9.6-slim
-
-WORKDIR /app
-
-# Copy over the virtual environment and project files
-COPY --from=builder /app/.venv .venv/
+# Copy the rest of the app
 COPY . .
 
-# Expose the application port
-EXPOSE 8000
-
-# Run FastAPI with Uvicorn (adjusted for `api/` folder)
-CMD ["/app/.venv/bin/python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run FastAPI using Uvicorn
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
