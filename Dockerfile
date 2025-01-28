@@ -15,8 +15,8 @@ RUN python -m venv .venv
 COPY requirements.txt ./
 RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
-RUN playwright install
+# Install Playwright inside the virtual environment
+RUN .venv/bin/playwright install --with-deps
 
 # Use a slim image for deployment
 FROM python:3.9.6-slim
