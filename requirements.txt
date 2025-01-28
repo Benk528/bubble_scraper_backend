@@ -59,3 +59,4 @@ urllib3==2.2.3
 uvicorn==0.32.1
 websockets==13.1
 yarl==1.18.3
+playwright==1.49.0
