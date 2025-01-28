@@ -17,7 +17,6 @@ exceptiongroup==1.2.2
 fastapi==0.115.6
 frozenlist==1.5.0
 gotrue==2.11.2
-greenlet==2.0.2
 h11==0.14.0
 h2==4.1.0
 hpack==4.1.0
@@ -37,7 +36,6 @@ psycopg2-binary==2.9.10
 pycparser==2.22
 pydantic==2.10.3
 pydantic_core==2.27.1
-pyee==9.0.4
 pymongo==4.10.1
 PyMuPDF==1.25.2
 pypdfium2==4.30.1
