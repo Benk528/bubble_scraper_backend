@@ -2,4 +2,12 @@
 .venv/
 __pycache__/
 node_modules/
+# Ignore Playwright binaries (they should be installed during deployment)
 playwright/
+playwright/.cache/
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+# Ignore Vercel files
+vercel.json
