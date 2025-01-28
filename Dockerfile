@@ -1,7 +1,7 @@
-# Use Python 3.9 as the base image
+# Use Python 3.9 slim as the base image
 FROM python:3.9-slim
 
-# Set environment variables to avoid buffering and force re-installation of dependencies
+# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
@@ -9,13 +9,10 @@ ENV PYTHONUNBUFFERED=1 \
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies needed for Playwright and FastAPI
-RUN apt-get update && apt-get install -y \
-    python3-venv \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies for Python and Playwright
+RUN apt-get update && apt-get install -y python3-venv curl && apt-get clean
 
-# Copy requirements and install dependencies
+# Copy requirements file and install dependencies
 COPY requirements.txt .
 RUN python -m venv .venv \
     && . .venv/bin/activate \
@@ -23,8 +20,11 @@ RUN python -m venv .venv \
     && pip install --no-cache-dir -r requirements.txt \
     && playwright install --with-deps
 
-# Copy the rest of the app
+# Copy application code
 COPY . .
 
-# Run FastAPI using Uvicorn
+# Expose port
+EXPOSE 8000
+
+# Run the FastAPI application
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
