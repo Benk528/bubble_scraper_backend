@@ -43,3 +43,8 @@ def get_all_scrapes():
     """Retrieves all scraped data from the Supabase database."""
     response = supabase.table("scrapes").select("*").execute()
     return response.data
+
+def get_scrapes_by_user(user_id):
+    """Retrieves all scraped data for a specific user from Supabase."""
+    response = supabase.table("scrapes").select("*").eq("user_id", user_id).execute()
+    return response.data

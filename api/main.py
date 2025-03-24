@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
-from database import save_scrape, init_db, get_all_scrapes
+from database import save_scrape, init_db, get_all_scrapes, get_scrapes_by_user
 import os
 
 # Debugging Environment Variables
@@ -19,8 +19,14 @@ def startup_event():
 def read_root():
     return {"message": "Welcome to the Scraper API"}
 
+@app.get("/scrapes/{user_id}", summary="Get all scrapes for a specific user")
+def get_scrapes_for_user(user_id: str):
+    scrapes = get_scrapes_by_user(user_id)
+    return {"scrapes": scrapes}
+
 class ScrapeRequest(BaseModel):
     url: str
+    user_id: str
 
 @app.post("/scrape")
 async def scrape_data(scrape_request: ScrapeRequest):
@@ -61,6 +67,7 @@ async def scrape_data(scrape_request: ScrapeRequest):
             await browser.close()
 
             scraped_data = {
+                "user_id": scrape_request.user_id,
                 "page_title": page_title,
                 "meta_data": meta_data,
                 "headings": headings,
