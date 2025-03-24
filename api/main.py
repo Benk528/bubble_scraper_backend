@@ -6,6 +6,7 @@ import os
 import pdfplumber
 import base64
 from typing import Optional
+from api.models import PDFScrapeRequest
 
 # Debugging Environment Variables
 print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
@@ -101,32 +102,33 @@ def get_scrapes():
 
 @app.post("/scrape-pdf")
 async def scrape_pdf(scrape_request: PDFScrapeRequest):
+    print("Received PDF scrape request:")
     try:
-        print("✅ Received PDF scrape request:")
-        print(f"🧾 user_id: {scrape_request.user_id}")
-        print(f"📄 filename: {scrape_request.filename}")
-        print(f"📦 pdf_base64 (first 50 chars): {scrape_request.pdf_base64[:50]}")
+        print(f"user_id: {scrape_request.user_id}")
+        print(f"filename: {scrape_request.filename}")
+        print(f"pdf_base64 (first 50 chars): {scrape_request.pdf_base64[:50]}")
 
-        # Decode the PDF
+        # Sanitize the filename
+        safe_filename = os.path.basename(scrape_request.filename)
+
+        # Decode and save the PDF
         pdf_bytes = base64.b64decode(scrape_request.pdf_base64)
+        with open(safe_filename, "wb") as f:
+            f.write(pdf_bytes)  # <-- This line was mis-indented in your version
 
-        # Save to a temporary file
-        with open(scrape_request.filename, "wb") as f:
-            f.write(pdf_bytes)
-
-        # Extract text with pdfplumber
+        # Extract text from PDF
         content = []
-        with pdfplumber.open(scrape_request.filename) as pdf:
+        with pdfplumber.open(safe_filename) as pdf:
             for page in pdf.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    content.append(page_text.strip())
+                text = page.extract_text()
+                if text:
+                    content.append(text)
 
         full_text = "\n".join(content)
 
         scraped_data = {
             "user_id": scrape_request.user_id,
-            "page_title": scrape_request.filename,
+            "page_title": safe_filename,
             "meta_data": {},
             "headings": [],
             "paragraphs": [full_text],
@@ -134,7 +136,6 @@ async def scrape_pdf(scrape_request: PDFScrapeRequest):
             "images": []
         }
 
-        # Save to Supabase
         scrape_id = save_scrape(scraped_data)
 
         return {
@@ -144,5 +145,5 @@ async def scrape_pdf(scrape_request: PDFScrapeRequest):
         }
 
     except Exception as e:
-        print(f"Error during PDF scrape: {str(e)}")
+        print("❌ Error during PDF scrape:", e)
         raise HTTPException(status_code=500, detail=str(e))
