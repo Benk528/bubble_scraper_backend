@@ -3,6 +3,9 @@ from pydantic import BaseModel
 from playwright.async_api import async_playwright
 from database import save_scrape, init_db, get_all_scrapes, get_scrapes_by_user
 import os
+import pdfplumber
+import base64
+from typing import Optional
 
 # Debugging Environment Variables
 print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
@@ -27,6 +30,11 @@ def get_scrapes_for_user(user_id: str):
 class ScrapeRequest(BaseModel):
     url: str
     user_id: str
+
+class PDFScrapeRequest(BaseModel):
+    pdf_base64: str
+    user_id: str
+    filename: Optional[str] = "uploaded.pdf"
 
 @app.post("/scrape")
 async def scrape_data(scrape_request: ScrapeRequest):
@@ -90,3 +98,38 @@ async def scrape_data(scrape_request: ScrapeRequest):
 def get_scrapes():
     scrapes = get_all_scrapes()
     return {"scrapes": scrapes}
+
+@app.post("/scrape-pdf")
+async def scrape_pdf(scrape_request: PDFScrapeRequest):
+    try:
+        pdf_bytes = base64.b64decode(scrape_request.pdf_base64)
+
+        with open(scrape_request.filename, "wb") as f:
+            f.write(pdf_bytes)
+
+        content = []
+        with pdfplumber.open(scrape_request.filename) as pdf:
+            for page in pdf.pages:
+                content.append(page.extract_text())
+
+        full_text = "\n".join([text for text in content if text])
+
+        scraped_data = {
+            "user_id": scrape_request.user_id,
+            "page_title": scrape_request.filename,
+            "meta_data": {},
+            "headings": [],
+            "paragraphs": [full_text],
+            "links": [],
+            "images": []
+        }
+
+        scrape_id = save_scrape(scraped_data)
+
+        return {
+            "message": "PDF Scrape successful",
+            "scrape_id": scrape_id,
+            "data": scraped_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
