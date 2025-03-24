@@ -6,7 +6,12 @@ import os
 import pdfplumber
 import base64
 from typing import Optional
-from api.models import PDFScrapeRequest
+
+# ✅ No need to re-import pydantic and Optional again here
+class PDFScrapeRequest(BaseModel):
+    pdf_base64: str
+    user_id: str
+    filename: Optional[str] = "uploaded.pdf"
 
 # Debugging Environment Variables
 print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
