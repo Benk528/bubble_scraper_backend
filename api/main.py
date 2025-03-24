@@ -102,17 +102,27 @@ def get_scrapes():
 @app.post("/scrape-pdf")
 async def scrape_pdf(scrape_request: PDFScrapeRequest):
     try:
+        print("✅ Received PDF scrape request:")
+        print(f"🧾 user_id: {scrape_request.user_id}")
+        print(f"📄 filename: {scrape_request.filename}")
+        print(f"📦 pdf_base64 (first 50 chars): {scrape_request.pdf_base64[:50]}")
+
+        # Decode the PDF
         pdf_bytes = base64.b64decode(scrape_request.pdf_base64)
 
+        # Save to a temporary file
         with open(scrape_request.filename, "wb") as f:
             f.write(pdf_bytes)
 
+        # Extract text with pdfplumber
         content = []
         with pdfplumber.open(scrape_request.filename) as pdf:
             for page in pdf.pages:
-                content.append(page.extract_text())
+                page_text = page.extract_text()
+                if page_text:
+                    content.append(page_text.strip())
 
-        full_text = "\n".join([text for text in content if text])
+        full_text = "\n".join(content)
 
         scraped_data = {
             "user_id": scrape_request.user_id,
@@ -124,6 +134,7 @@ async def scrape_pdf(scrape_request: PDFScrapeRequest):
             "images": []
         }
 
+        # Save to Supabase
         scrape_id = save_scrape(scraped_data)
 
         return {
@@ -131,5 +142,7 @@ async def scrape_pdf(scrape_request: PDFScrapeRequest):
             "scrape_id": scrape_id,
             "data": scraped_data
         }
+
     except Exception as e:
+        print(f"Error during PDF scrape: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
