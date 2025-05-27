@@ -8,10 +8,6 @@ import base64
 from typing import Optional
 
 # ✅ No need to re-import pydantic and Optional again here
-class PDFScrapeRequest(BaseModel):
-    pdf_base64: str
-    user_id: str
-    filename: Optional[str] = "uploaded.pdf"
 
 # Debugging Environment Variables
 print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
@@ -38,11 +34,14 @@ class ScrapeRequest(BaseModel):
     user_id: str
 
 class PDFScrapeRequest(BaseModel):
+    """
+    Request body for scraping PDF files.
+    """
     pdf_base64: str
     user_id: str
     filename: Optional[str] = "uploaded.pdf"
 
-@app.post("/scrape")
+@app.post("/scrape-website", summary="Scrape a website and extract structured data")
 async def scrape_data(scrape_request: ScrapeRequest):
     try:
         async with async_playwright() as p:
@@ -100,12 +99,12 @@ async def scrape_data(scrape_request: ScrapeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/scrapes")
+@app.get("/scrapes", summary="Get all scrapes for all users")
 def get_scrapes():
     scrapes = get_all_scrapes()
     return {"scrapes": scrapes}
 
-@app.post("/scrape-pdf")
+@app.post("/scrape-pdf", summary="Extract text from a PDF file (base64-encoded)")
 async def scrape_pdf(scrape_request: PDFScrapeRequest):
     print("Received PDF scrape request:")
     try:
