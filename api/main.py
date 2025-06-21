@@ -99,8 +99,7 @@ async def scrape_data(scrape_request: ScrapeRequest):
                     "business_name": scrape_request.business_name,
                     "logo_url": scrape_request.logo_url,
                     "scraped_text": "\n".join(paragraphs),
-                    "user_id": scrape_request.user_id,
-                    "id": scrape_request.user_id
+                    "user_id": scrape_request.user_id
                 }
 
                 supabase.table("client_chatbots").upsert(
