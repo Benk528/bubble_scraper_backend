@@ -90,12 +90,16 @@ async def scrape_data(scrape_request: ScrapeRequest):
 
             if scrape_request.client_chatbot_id:
                 chatbot_data = {
-                    "id": scrape_request.client_chatbot_id,
+                    "bubble_client_chatbot_id": scrape_request.client_chatbot_id,
                     "business_name": scrape_request.business_name,
                     "logo_url": scrape_request.logo_url,
                     "scraped_text": "\n".join(paragraphs),
                 }
-                supabase.table("client_chatbots").upsert(chatbot_data).execute()
+
+                supabase.table("client_chatbots").upsert(
+                    chatbot_data,
+                    on_conflict="bubble_client_chatbot_id"
+                ).execute()
 
                 return {
                     "message": "Scrape successful (client_chatbot)",
