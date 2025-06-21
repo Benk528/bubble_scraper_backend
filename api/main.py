@@ -6,12 +6,18 @@ import os
 import pdfplumber
 import base64
 from typing import Optional
+from supabase import create_client  # ✅ NEW
 
 # ✅ No need to re-import pydantic and Optional again here
 
 # Debugging Environment Variables
 print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
 print("SUPABASE_KEY:", os.getenv("SUPABASE_KEY"))
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
 
@@ -32,6 +38,9 @@ def get_scrapes_for_user(user_id: str):
 class ScrapeRequest(BaseModel):
     url: str
     user_id: str
+    client_chatbot_id: Optional[str] = None
+    business_name: Optional[str] = None
+    logo_url: Optional[str] = None
 
 class PDFScrapeRequest(BaseModel):
     """
@@ -79,23 +88,38 @@ async def scrape_data(scrape_request: ScrapeRequest):
 
             await browser.close()
 
-            scraped_data = {
-                "user_id": scrape_request.user_id,
-                "page_title": page_title,
-                "meta_data": meta_data,
-                "headings": headings,
-                "paragraphs": paragraphs,
-                "links": links,
-                "images": images,
-            }
+            if scrape_request.client_chatbot_id:
+                chatbot_data = {
+                    "id": scrape_request.client_chatbot_id,
+                    "business_name": scrape_request.business_name,
+                    "logo_url": scrape_request.logo_url,
+                    "scraped_text": "\n".join(paragraphs),
+                }
+                supabase.table("client_chatbots").upsert(chatbot_data).execute()
 
-            scrape_id = save_scrape(scraped_data)
+                return {
+                    "message": "Scrape successful (client_chatbot)",
+                    "chatbot_id": scrape_request.client_chatbot_id,
+                    "data": chatbot_data
+                }
+            else:
+                scraped_data = {
+                    "user_id": scrape_request.user_id,
+                    "page_title": page_title,
+                    "meta_data": meta_data,
+                    "headings": headings,
+                    "paragraphs": paragraphs,
+                    "links": links,
+                    "images": images,
+                }
 
-            return {
-                "message": "Scrape successful",
-                "scrape_id": scrape_id,
-                "data": scraped_data
-            }
+                scrape_id = save_scrape(scraped_data)
+
+                return {
+                    "message": "Scrape successful",
+                    "scrape_id": scrape_id,
+                    "data": scraped_data
+                }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
