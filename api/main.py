@@ -89,11 +89,14 @@ async def scrape_data(scrape_request: ScrapeRequest):
             await browser.close()
 
             if scrape_request.client_chatbot_id:
+                print("client_chatbot_id received:", scrape_request.client_chatbot_id)
+
                 chatbot_data = {
                     "bubble_client_chatbot_id": scrape_request.client_chatbot_id,
                     "business_name": scrape_request.business_name,
                     "logo_url": scrape_request.logo_url,
                     "scraped_text": "\n".join(paragraphs),
+                    "user_id": scrape_request.user_id,
                 }
 
                 supabase.table("client_chatbots").upsert(
@@ -106,24 +109,25 @@ async def scrape_data(scrape_request: ScrapeRequest):
                     "chatbot_id": scrape_request.client_chatbot_id,
                     "data": chatbot_data
                 }
-            else:
-                scraped_data = {
-                    "user_id": scrape_request.user_id,
-                    "page_title": page_title,
-                    "meta_data": meta_data,
-                    "headings": headings,
-                    "paragraphs": paragraphs,
-                    "links": links,
-                    "images": images,
-                }
 
-                scrape_id = save_scrape(scraped_data)
+            # fallback to default scraping behavior
+            scraped_data = {
+                "user_id": scrape_request.user_id,
+                "page_title": page_title,
+                "meta_data": meta_data,
+                "headings": headings,
+                "paragraphs": paragraphs,
+                "links": links,
+                "images": images,
+            }
 
-                return {
-                    "message": "Scrape successful",
-                    "scrape_id": scrape_id,
-                    "data": scraped_data
-                }
+            scrape_id = save_scrape(scraped_data)
+
+            return {
+                "message": "Scrape successful",
+                "scrape_id": scrape_id,
+                "data": scraped_data
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
