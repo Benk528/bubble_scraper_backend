@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from playwright.async_api import async_playwright
 from database import save_scrape, init_db, get_all_scrapes, get_scrapes_by_user
 import os
@@ -38,9 +38,12 @@ def get_scrapes_for_user(user_id: str):
 class ScrapeRequest(BaseModel):
     url: str
     user_id: str
-    client_chatbot_id: Optional[str] = None
+    client_chatbot_id: Optional[str] = Field(default=None, alias="bubble_client_chatbot_id")
     business_name: Optional[str] = None
     logo_url: Optional[str] = None
+
+    class Config:
+        allow_population_by_field_name = True
 
 class PDFScrapeRequest(BaseModel):
     """
