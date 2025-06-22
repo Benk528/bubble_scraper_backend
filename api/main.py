@@ -110,7 +110,7 @@ async def scrape_data(scrape_request: ScrapeRequest):
                 return {
                     "message": "Scrape successful (client_chatbot)",
                     "chatbot_id": scrape_request.client_chatbot_id,
-                    "data": chatbot_data
+                    **chatbot_data
                 }
 
             # fallback to default scraping behavior
