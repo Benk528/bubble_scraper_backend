@@ -38,7 +38,7 @@ def get_scrapes_for_user(user_id: str):
 class ScrapeRequest(BaseModel):
     url: str
     user_id: str
-    client_chatbot_id: Optional[str] = Field(default=None, alias="bubble_client_chatbot_id")
+    bubble_client_chatbot_id: Optional[str] = None
     business_name: Optional[str] = None
     logo_url: Optional[str] = None
 
@@ -91,11 +91,11 @@ async def scrape_data(scrape_request: ScrapeRequest):
 
             await browser.close()
 
-            if scrape_request.client_chatbot_id:
-                print("client_chatbot_id received:", scrape_request.client_chatbot_id)
+            if scrape_request.bubble_client_chatbot_id:
+                print("bubble_client_chatbot_id received:", scrape_request.bubble_client_chatbot_id)
 
                 chatbot_data = {
-                    "bubble_client_chatbot_id": scrape_request.client_chatbot_id,
+                    "bubble_client_chatbot_id": scrape_request.bubble_client_chatbot_id,
                     "business_name": scrape_request.business_name,
                     "logo_url": scrape_request.logo_url,
                     "scraped_text": "\n".join(paragraphs),
@@ -109,7 +109,7 @@ async def scrape_data(scrape_request: ScrapeRequest):
 
                 return {
                     "message": "Scrape successful (client_chatbot)",
-                    "chatbot_id": scrape_request.client_chatbot_id,
+                    "chatbot_id": scrape_request.bubble_client_chatbot_id,
                     **chatbot_data
                 }
 
